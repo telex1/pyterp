@@ -4,51 +4,86 @@
 # the interpreter object uses a stack to keep track of the program
 class Interpreter:
 	
-	# this empty list created when the interpreter object is created will be used
+	# this empty list, created when the interpreter object is created will be used
 	# as the stack
 	def __init__(self):
 		self.stack = []
+		self.envrionment = {}
+	
+	def STORE_NAME(self, name):
+		val = self.stack.pop()
+		self.envrionment[name] = val
+	
+	def LOAD_NAME(self, name):
+		val = self.environment[name]
+		self.stack.append(val)
 	
 	def LOAD_VALUE(self, number):
-		self.stack.append(number)
+        	self.stack.append(number)
+
+    	def PRINT_ANSWER(self):
+        	answer = self.stack.pop()
+        	print(answer)
+
+    	def ADD_TWO_VALUES(self):
+        	first_num = self.stack.pop()
+        	second_num = self.stack.pop()
+        	total = first_num + second_num
+        	self.stack.append(total)
 	
-	def PRINT_ANSWER(self):
-		answer = self.stack.pop()
-		print(answer)
-	
-	def ADD_TWO_VALUES(self):
-		first_num = self.stack.pop()
-		second_num = self.stack.pop()
-		total = first_num + second_num
-		self.stack.append(total)
+	def parse_argument(self, instruction, argument, what_to_exec):
+		""" Understand what the argument to each instruction is """
+
+		numbers = ["LOAD_VALUE"]
+		names = ["LOAD_NAME", "STORE_NAME"]
+
+		if instruction in numbers:
+			argument = what_to_exec["numbers"][argument]
+		elif instruction in names:
+			argument = what_to_exec["names"][argument]
+
+		return argument
 	
 	# takes a dictionary (exec_code) which contains instructions and values for running the program and
 	# loops and processes them
-	def run_code(self, exec_code):
+	def execute(self, exec_code):
+
+		# unpack exec_code
 		instructions = exec_code["instructions"] 
-		numbers = exec_code["numbers"]
 		
 		for step in instructions:
+			
+			# unpack each instruction
 			instruction, argument = step
-			if instruction == "LOAD_VALUE":
-				number = numbers[argument]
-				self.LOAD_VALUE(number)
-			elif instruction == "ADD_TWO_VALUES":
-				self.ADD_TWO_VALUES()
-			elif instruction == "PRINT_ANSWER":
-				self.PRINT_ANSWER()
+
+			# is the argument in "numbers" or "names" of the program
+			argument = self.parse_argument(instruction, argument, exec_code)
+
+			# look up method to execute. instruction "LOAD_VALUE" corresponds to LOAD_VALUE method
+			bytecode_method = getattr(self, instruction)
+
+			if argument is None:
+				bytecode_method()
+
+			else: 
+				bytecode_method(argument)
 
 
 # main
 
-# examle instructions that adds two numbers
-sample_instructions = {
-	"instructions": [("LOAD_VALUE", 0), # frist number
-			 ("LOAD_VALUE", 1), # second number
-			 ("ADD_TWO_VALUES", None),
-			 ("PRINT_ANSWER", None)],
-	"numbers": [7, 8] }
+# program to execute
+what_to_execute = {
+        "instructions": [("LOAD_VALUE", 0),
+                         ("STORE_NAME", 0),
+                         ("LOAD_VALUE", 1),
+                         ("STORE_NAME", 1),
+                         ("LOAD_NAME", 0),
+                         ("LOAD_NAME", 1),
+                         ("ADD_TWO_VALUES", None),
+                         ("PRINT_ANSWER", None)],
+        "numbers": [1, 2],
+        "names":   ["a", "b"] 
 
 # driver code
 interpreter = Interpreter()
-interpreter.run_code(sample_instructions)
+interpreter.execute(what_to_execute)
