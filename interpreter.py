@@ -1,6 +1,6 @@
 
 
-
+# small change
 # the interpreter object uses a stack to keep track of the program
 class Interpreter:
 	
