@@ -22,7 +22,7 @@ class VirtualMachine(object):
 		
 		self.run_frame(frame)
 
-	# stuff for frames
+	# frame methods
 	def make_frame(self, code, callargs={}, global_names=None, local_names=None):
 		if global_names is not None and local_names is not None:
 			local_names = global_names
@@ -51,8 +51,30 @@ class VirtualMachine(object):
 		else:
 			self.frame = None
 	
-	def run_frame(self):
-		pass
+	def run_frame(self, frame):
+		
+		self.push_frame(frame)
+		while True:
+			byte_name, arguments = self.parse_byte_and_args()
+
+			why = self.dispatch(byte_name, arguments)
+
+			while why and frame.block_stack:
+				why = self.manage_block_stack(why)
+
+			if why:
+				break
+
+		self.pop_frame()
+
+		if why == 'exception':
+			exc, val, tb = self.last_exception
+			e = exc(val)
+			e.__traceback__ = tb
+			raise e
+		
+		return self.return_value
+
 
 # each frame instance is associated with one code object and manages
 # the global and local namespaces, it also keeps a reference to the calling frame and the last bytecode instruction executed 
@@ -74,4 +96,17 @@ class Frame(object):
 
 		self.last_instruction = 0
 		self.block_stack = []
+
+	
+
+class Function(object):
+	"""
+	create a function object
+	"""
+	__slots__ = [
+        	'func_code', 'func_name', 'func_defaults', 'func_globals',
+        	'func_locals', 'func_dict', 'func_closure',
+        	'__name__', '__dict__', '__doc__',
+        	'_vm', '_func',
+    	]
 	
